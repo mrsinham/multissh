@@ -36,10 +36,13 @@ class ParallelCommand:
         oClient.load_system_host_keys()
         oClient.connect(sServer, 22, 'prod')
         (stdin, stdout, stderr) = oClient.exec_command(sCommand)
+
         self.oLock.acquire()
         print bcolors.OKBLUE + "\nresults on " + sServer + ":" + bcolors.ENDC
 
         for line in stdout.readlines():
+            sys.stdout.write(line)
+        for line in stderr.readlines():
             sys.stdout.write(line)
         self.oLock.release()
         oClient.close()
