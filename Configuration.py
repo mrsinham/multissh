@@ -87,8 +87,6 @@ class Command:
 
         sCmd = self.aConfiguration[sCmdName]
         for sArgs in aArguments:
-            pprint.pprint(sArgs)
             sCmd['cmd'] = sCmd['cmd'].replace('[-]', sArgs, 1)
-        pprint.pprint(sCmd)
         return self.aConfiguration[sCmdName]
 
