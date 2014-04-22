@@ -34,6 +34,7 @@ class ParallelCommand:
         print "executing "+sCommand+" on "+sServer
         oClient = paramiko.SSHClient()
         oClient.load_system_host_keys()
+        oClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         oClient.connect(sServer, 22, 'prod')
         (stdin, stdout, stderr) = oClient.exec_command(sCommand)
 

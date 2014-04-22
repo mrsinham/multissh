@@ -21,7 +21,6 @@ class Main:
         self.oParser = None
 
     def __executeFromExecute(self):
-        pprint(self.aArgs)
         if self.aArgs.serveralias is None:
             raise Exception('unable to know serveralias')
         self.sServerAlias = self.aArgs.serveralias
