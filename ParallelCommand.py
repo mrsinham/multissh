@@ -1,6 +1,8 @@
 __author__ = 'julien.lefevre'
+
 import paramiko
 import threading
+import select
 from threading import Lock
 import sys
 
@@ -24,31 +26,48 @@ class ParallelCommand:
 
     def __init__(self):
         self.oLock = Lock()
+        self.aThreads = []
 
     def execute(self, sCommand, aGroupOfServer):
+        # cleaning
+        self.aThreads = []
         for sServer in aGroupOfServer:
             aTask = threading.Thread(None, self.__execCommandOnServer, None, [sCommand, sServer])
             aTask.start()
+            self.aThreads.append(aTask)
+
+    def __execAndRead(self, oChannel, sCommand):
+        oChannel.exec_command(sCommand)
+        sResponse = ''
+        sResponseStdErr = ''
+        while True:
+            if oChannel.exit_status_ready():
+                if '' == sResponse and '' == sResponseStdErr:
+                    sResponse = bcolors.WARNING + 'no results' + bcolors.ENDC + "\n"
+                break
+            sCurrent = oChannel.recv(1024)
+            if len(sCurrent) > 0:
+                sResponse += sCurrent
+                sResponseStdErr += oChannel.recv_stderr(1024)  # + "\n"
+        return sResponse, sResponseStdErr
 
     def __execCommandOnServer(self, sCommand, sServer):
-        print "executing "+sCommand+" on "+sServer
         oClient = paramiko.SSHClient()
         oClient.load_system_host_keys()
         oClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         oClient.connect(sServer, 22, 'prod')
-        (stdin, stdout, stderr) = oClient.exec_command(sCommand)
+
+        oChannel = oClient.get_transport().open_session()
+        try:
+            sResponse, sResponseStdErr = self.__execAndRead(oChannel, sCommand)
+        except KeyboardInterrupt:
+            oClient.close()
 
         self.oLock.acquire()
-        print bcolors.OKBLUE + "\nresults on " + sServer + ":" + bcolors.ENDC
+        print bcolors.OKBLUE + '['+bcolors.WARNING+sServer+bcolors.OKBLUE+']'+' '+sCommand + bcolors.ENDC
 
-        for line in stdout.readlines():
-            sys.stdout.write(line)
-        for line in stderr.readlines():
-            sys.stdout.write(line)
+        sys.stdout.write(sResponse)
+        sys.stdout.write(sResponseStdErr)
+
         self.oLock.release()
         oClient.close()
-
-#oCommandExecutor = ParallelCommand()
-#oCommandExecutor.execute('grep "8780145292375003232" -R /opt/twenga/var/log/front-b2c-prod-showcase-item-service-update/', aServer['cli'])
-
-#execCommand('grep "8780145292375003232" -R /opt/twenga/var/log/front-b2c-prod-showcase-item-service-update/', aServer['cli'])
