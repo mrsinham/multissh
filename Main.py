@@ -58,13 +58,17 @@ class Main:
 
 
 
+
+
 if __name__ == "__main__":
 
     oMain = Main()
     try:
         oMain.run()
+
         while True:
             time.sleep(100)
     except (KeyboardInterrupt, SystemExit):
+        pprint('interrupt main thread')
         oMain.stop()
 

@@ -29,6 +29,7 @@ class ParallelCommand:
         self.oLock = Lock()
         self.aThreads = []
         self.oEvent = threading.Event()
+        self.bFinished = False
 
     def execute(self, sCommand, aGroupOfServer):
         # cleaning
@@ -38,16 +39,26 @@ class ParallelCommand:
 
             oThread = Command(self.oLock, sCommand, sServer, self.oEvent)
             self.aThreads.append(oThread)
+            oThread.daemon = True
             oThread.start()
             # aTask = threading.Thread(None, self.__execCommandOnServer, None, [sCommand, sServer])
             # aTask.start()
+
+        while True:
+            i = 0
+            for oThread in self.aThreads:
+                if not oThread.isAlive():
+                    i += 1
+            if len(self.aThreads) == i:
+                raise SystemExit()
 
     def stop(self):
         pprint('sending stop')
         self.oEvent.clear()
         for oThread in self.aThreads:
-            oThread.join()
+            oThread.stop()
             # pass
+
 
 
 class Command(threading.Thread):
@@ -59,6 +70,8 @@ class Command(threading.Thread):
         self.sServer = sServer
         self.bRunning = True
         self.oEvent = oEvent
+        self.oChannel = None
+        self.bActive = True
 
     def run(self):
         oClient = paramiko.SSHClient()
@@ -68,31 +81,39 @@ class Command(threading.Thread):
 
         oChannel = oClient.get_transport().open_session()
 
-        oChannel.get_pty()
-        # return oChannel
         sResponse = ''
         sResponseStdErr = ''
-        # pprint(self.sCommand)
 
         oChannel.exec_command(self.sCommand)
-        while True:
-            rl, wl, xl = select.select([oChannel],[],[],0.0)
-            if len(rl) > 0:
-                pprint('read '+self.sServer)
-                sCurrent = oChannel.recv(1024)
-                sResponse += sCurrent
-                sResponseStdErr += oChannel.recv_stderr(1024)
+        oChannel.set_combine_stderr(True)
+        self.oChannel = oChannel
+        while self.oEvent.is_set():
             if oChannel.exit_status_ready():
                 if '' == sResponse and '' == sResponseStdErr:
                     sResponse = bcolors.WARNING + 'no results' + bcolors.ENDC + "\n"
                 break
+            try:
+                oData = oChannel.recv(1024)
+                while oData:
+                    sResponse += oData
+                    oData = oChannel.recv(1024)
+            except (SSHException, e):
+                pass
+                return
 
-        self.oLock.acquire()
-        print bcolors.OKBLUE + '['+bcolors.WARNING+self.sServer+bcolors.OKBLUE+']'+' '+self.sCommand + bcolors.ENDC
+        oClient.close()
+
         sResponse += "\n"
-        sResponseStdErr += "\n"
+        # if self.bActive:
+        self.oLock.acquire()
+        sys.stdout.write(bcolors.OKBLUE + '['+bcolors.WARNING+self.sServer+bcolors.OKBLUE+']'+' '+self.sCommand + bcolors.ENDC+"\n")
         sys.stdout.write(sResponse)
-        sys.stdout.write(sResponseStdErr)
         self.oLock.release()
 
+    def stop(self):
+        self.bActive = False
+        self.oEvent.clear()
+        if self.oChannel is not None:
+            self.oChannel.shutdown(0)
+            self.oChannel.close()
 
