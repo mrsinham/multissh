@@ -3,6 +3,7 @@ __author__ = 'julien.lefevre'
 import Configuration
 import ParallelCommand
 from pprint import pprint
+import time
 
 try:
     import argparse
@@ -52,10 +53,18 @@ class Main:
         self.oParser.add_argument('-a', '--args', nargs='*')
         self.aArgs = self.oParser.parse_args()
 
+    def stop(self):
+        self.oParallel.stop()
+
 
 
 if __name__ == "__main__":
 
     oMain = Main()
-    oMain.run()
+    try:
+        oMain.run()
+        while True:
+            time.sleep(100)
+    except (KeyboardInterrupt, SystemExit):
+        oMain.stop()
 

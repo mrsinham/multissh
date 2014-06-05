@@ -3,6 +3,7 @@ __author__ = 'julien.lefevre'
 import paramiko
 import threading
 import select
+from pprint import  pprint
 from threading import Lock
 import sys
 
@@ -27,47 +28,71 @@ class ParallelCommand:
     def __init__(self):
         self.oLock = Lock()
         self.aThreads = []
+        self.oEvent = threading.Event()
 
     def execute(self, sCommand, aGroupOfServer):
         # cleaning
         self.aThreads = []
+        self.oEvent.set()
         for sServer in aGroupOfServer:
-            aTask = threading.Thread(None, self.__execCommandOnServer, None, [sCommand, sServer])
-            aTask.start()
-            self.aThreads.append(aTask)
 
-    def __execAndRead(self, oChannel, sCommand):
-        oChannel.exec_command(sCommand)
+            oThread = Command(self.oLock, sCommand, sServer, self.oEvent)
+            self.aThreads.append(oThread)
+            oThread.start()
+            # aTask = threading.Thread(None, self.__execCommandOnServer, None, [sCommand, sServer])
+            # aTask.start()
+
+    def stop(self):
+        pprint('sending stop')
+        self.oEvent.clear()
+        for oThread in self.aThreads:
+            oThread.join()
+            # pass
+
+
+class Command(threading.Thread):
+
+    def __init__(self, oLock, sCommand, sServer, oEvent):
+        super(Command, self).__init__()
+        self.oLock = oLock
+        self.sCommand = sCommand
+        self.sServer = sServer
+        self.bRunning = True
+        self.oEvent = oEvent
+
+    def run(self):
+        oClient = paramiko.SSHClient()
+        oClient.load_system_host_keys()
+        oClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        oClient.connect(self.sServer, 22, 'prod')
+
+        oChannel = oClient.get_transport().open_session()
+
+        oChannel.get_pty()
+        # return oChannel
         sResponse = ''
         sResponseStdErr = ''
+        # pprint(self.sCommand)
+
+        oChannel.exec_command(self.sCommand)
         while True:
+            rl, wl, xl = select.select([oChannel],[],[],0.0)
+            if len(rl) > 0:
+                pprint('read '+self.sServer)
+                sCurrent = oChannel.recv(1024)
+                sResponse += sCurrent
+                sResponseStdErr += oChannel.recv_stderr(1024)
             if oChannel.exit_status_ready():
                 if '' == sResponse and '' == sResponseStdErr:
                     sResponse = bcolors.WARNING + 'no results' + bcolors.ENDC + "\n"
                 break
-            sCurrent = oChannel.recv(1024)
-            if len(sCurrent) > 0:
-                sResponse += sCurrent
-                sResponseStdErr += oChannel.recv_stderr(1024)  # + "\n"
-        return sResponse, sResponseStdErr
-
-    def __execCommandOnServer(self, sCommand, sServer):
-        oClient = paramiko.SSHClient()
-        oClient.load_system_host_keys()
-        oClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        oClient.connect(sServer, 22, 'prod')
-
-        oChannel = oClient.get_transport().open_session()
-        try:
-            sResponse, sResponseStdErr = self.__execAndRead(oChannel, sCommand)
-        except KeyboardInterrupt:
-            oClient.close()
 
         self.oLock.acquire()
-        print bcolors.OKBLUE + '['+bcolors.WARNING+sServer+bcolors.OKBLUE+']'+' '+sCommand + bcolors.ENDC
-
+        print bcolors.OKBLUE + '['+bcolors.WARNING+self.sServer+bcolors.OKBLUE+']'+' '+self.sCommand + bcolors.ENDC
+        sResponse += "\n"
+        sResponseStdErr += "\n"
         sys.stdout.write(sResponse)
         sys.stdout.write(sResponseStdErr)
-
         self.oLock.release()
-        oClient.close()
+
+
