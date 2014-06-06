@@ -1,4 +1,5 @@
-from qi import config, command
+import config
+import command
 
 __author__ = 'julien.lefevre'
 
@@ -40,10 +41,13 @@ class Main:
         self.__parseArgument()
         self.oConfigurationServer.loadConfigurationFromFile()
 
+
+        bRunValid = False
         if self.aArgs.execute is not None:
             if self.aArgs.serveralias is None:
                 raise Exception('unable to execute without server alias')
             self.__executeFromExecute()
+            bRunValid = True
 
         if self.aArgs.command is not None:
             aArgs = []
@@ -51,6 +55,11 @@ class Main:
                 aArgs = self.aArgs.args
             aAliasAndCmd = self.oConfigurationServer.getAliasAndCmd(self.aArgs.command, aArgs)
             self.oParallel.execute(aAliasAndCmd['cmd'], self.oConfigurationServer.getServerByAlias(aAliasAndCmd['alias']))
+            bRunValid = True
+
+        if not bRunValid:
+            self.oParser.print_help()
+            raise SystemExit()
 
     def __parseArgument(self):
         self.oParser = argparse.ArgumentParser(description='Execute multiple commands in qi on server')
@@ -63,6 +72,5 @@ class Main:
     def stop(self):
         self.oParallel.stop()
 
-
-
-
+if __name__ == "__main__":
+    main()

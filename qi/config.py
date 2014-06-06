@@ -18,7 +18,9 @@ class Main:
             self.sFilename = sFilename
         self.sFilename = os.path.abspath(self.sFilename)
         if not os.path.isfile(self.sFilename):
-            raise Exception('file ' + self.sFilename + ' dont exists')
+            fFile = open(self.sFilename, 'w')
+            fFile.close()
+            #raise Exception('file ' + self.sFilename + ' dont exists')
 
         oConfigParser = ConfigParser.ConfigParser()
         oConfigParser.read(self.sFilename)
@@ -46,7 +48,7 @@ class Server:
     def parseServerSection(self, oConfigParser):
         aSection = oConfigParser.sections()
         if 'server' not in aSection:
-            raise Exception('server section not found in ' + self.sFilename)
+            raise Exception('server section not found in configuration')
 
         for aKeyValues in oConfigParser.items('server'):
             (sKey, mValue) = aKeyValues

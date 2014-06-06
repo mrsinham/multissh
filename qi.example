@@ -1,0 +1,5 @@
+[server]
+servers=server-01.com,server-02.com,server-03.com
+[cmd]
+displaylog=ls -lht /var/log/
+displaylogservers=servers, ls -lht /var/log/
