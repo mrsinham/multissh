@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="qi",
-    version="0.1",
+    version="0.1.1",
     author="Julien LEFEVRE",
     author_email="julien.lefevr@gmail.com",
     packages=['qi'],
