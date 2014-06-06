@@ -2,7 +2,6 @@ __author__ = 'julien.lefevre'
 
 import paramiko
 import threading
-import select
 from pprint import  pprint
 from threading import Lock
 import sys
@@ -36,13 +35,10 @@ class ParallelCommand:
         self.aThreads = []
         self.oEvent.set()
         for sServer in aGroupOfServer:
-
             oThread = Command(self.oLock, sCommand, sServer, self.oEvent)
             self.aThreads.append(oThread)
             oThread.daemon = True
             oThread.start()
-            # aTask = threading.Thread(None, self.__execCommandOnServer, None, [sCommand, sServer])
-            # aTask.start()
 
         while True:
             i = 0
@@ -53,7 +49,6 @@ class ParallelCommand:
                 raise SystemExit()
 
     def stop(self):
-        pprint('sending stop')
         self.oEvent.clear()
         for oThread in self.aThreads:
             oThread.stop()

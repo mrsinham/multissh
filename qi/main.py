@@ -1,21 +1,28 @@
+from qi import config, command
+
 __author__ = 'julien.lefevre'
 
-import Configuration
-import ParallelCommand
-from pprint import pprint
 import time
-
 try:
     import argparse
 except ImportError:
     raise ImportError('you need arg parse module to use twssh')
 
 
+def main():
+    oMain = Main()
+    try:
+        oMain.run()
+        while True:
+            time.sleep(100)
+    except (KeyboardInterrupt, SystemExit):
+        oMain.stop()
+
 class Main:
 
     def __init__(self):
-        self.oConfigurationServer = Configuration.Main()
-        self.oParallel = ParallelCommand.ParallelCommand()
+        self.oConfigurationServer = config.Main()
+        self.oParallel = command.ParallelCommand()
         self.sServerAlias = None
         self.sCmd = None
         self.aArgs = None
@@ -46,7 +53,7 @@ class Main:
             self.oParallel.execute(aAliasAndCmd['cmd'], self.oConfigurationServer.getServerByAlias(aAliasAndCmd['alias']))
 
     def __parseArgument(self):
-        self.oParser = argparse.ArgumentParser(description='Execute multiple commands in parallel on server')
+        self.oParser = argparse.ArgumentParser(description='Execute multiple commands in qi on server')
         self.oParser.add_argument('-e', '--execute', help='Command to execute')
         self.oParser.add_argument('-s', '--serveralias', help='Servers alias as specified in configuration file')
         self.oParser.add_argument('-c', '--command', help='prefilled command in the cmd section')
@@ -58,17 +65,4 @@ class Main:
 
 
 
-
-
-if __name__ == "__main__":
-
-    oMain = Main()
-    try:
-        oMain.run()
-
-        while True:
-            time.sleep(100)
-    except (KeyboardInterrupt, SystemExit):
-        pprint('interrupt main thread')
-        oMain.stop()
 

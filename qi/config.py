@@ -5,7 +5,7 @@ import os,ConfigParser,pprint
 class Main:
 
     def __init__(self):
-        self.sFilename = os.path.expanduser('~')+'/.parallel'
+        self.sFilename = os.path.expanduser('~')+'/.qi'
         self.oConfigParser = None
         self.oServer = None
         self.oCmd = None
