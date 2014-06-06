@@ -8,7 +8,7 @@ setup(
     author_email="julien.lefevr@gmail.com",
     packages=['qi'],
     py_modules=['main', 'config', 'command'],
-    install_requires=['paramiko'],
+    install_requires=['paramiko', 'argparse'],
     entry_points= {
         'console_scripts': [
             'qi = qi.main:main'

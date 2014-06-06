@@ -2,7 +2,6 @@ __author__ = 'julien.lefevre'
 
 import paramiko
 import threading
-from pprint import  pprint
 from threading import Lock
 import sys
 
