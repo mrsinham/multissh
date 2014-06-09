@@ -5,6 +5,7 @@ import threading
 from threading import Lock
 import sys
 
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -21,8 +22,8 @@ class bcolors:
         self.FAIL = ''
         self.ENDC = ''
 
-class ParallelCommand:
 
+class ParallelCommand:
     def __init__(self):
         self.oLock = Lock()
         self.aThreads = []
@@ -54,9 +55,7 @@ class ParallelCommand:
             # pass
 
 
-
 class Command(threading.Thread):
-
     def __init__(self, oLock, sCommand, sServer, oEvent):
         super(Command, self).__init__()
         self.oLock = oLock
@@ -66,12 +65,31 @@ class Command(threading.Thread):
         self.oEvent = oEvent
         self.oChannel = None
         self.bActive = True
+        self.sUsername = 'prod'
+
+    def __parseServer(self):
+        if '@' in self.sServer:
+            aSplittedHost = self.sServer.split('@')
+            self.sUsername = aSplittedHost[0]
+            self.sServer = aSplittedHost[1]
+
+    def _getHeader(self):
+        sHeader = bcolors.OKBLUE + '[' + bcolors.WARNING + self.sUsername + '@' + \
+                  self.sServer + bcolors.OKBLUE + ']' + ' ' + self.sCommand + bcolors.ENDC + "\n"
+        return sHeader
 
     def run(self):
+        self.__parseServer()
         oClient = paramiko.SSHClient()
         oClient.load_system_host_keys()
         oClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        oClient.connect(self.sServer, 22, 'prod')
+        try:
+            oClient.connect(self.sServer, 22, self.sUsername)
+        except Exception, e:
+            sHeader = self._getHeader()
+            sHeader += 'unable to connect to '+self.sUsername+'@'+self.sServer + ': '+e.message+"\n"
+            sys.stdout.write(sHeader)
+            return
 
         oChannel = oClient.get_transport().open_session()
 
@@ -100,7 +118,8 @@ class Command(threading.Thread):
         sResponse += "\n"
         # if self.bActive:
         self.oLock.acquire()
-        sys.stdout.write(bcolors.OKBLUE + '['+bcolors.WARNING+self.sServer+bcolors.OKBLUE+']'+' '+self.sCommand + bcolors.ENDC+"\n")
+        sHeader = self._getHeader()
+        sys.stdout.write(sHeader)
         sys.stdout.write(sResponse)
         self.oLock.release()
 
