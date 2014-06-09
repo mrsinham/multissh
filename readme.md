@@ -5,7 +5,7 @@ Qi is a simple tool based on Paramiko framework to execute a parallel query on m
 
 ## Basic usage
 
-Qi use its configuration file, `~/.qi`, see the configuration section. Copy qi.example to ~/.qi to start a new conf file
+Qi use its configuration file, `~/.qi`, see the configuration section. Copy qi.example to `~/.qi` to start a new conf file
 
     usage: main.py [-h] [-e EXECUTE] [-s SERVERALIAS] [-c COMMAND]
                    [-a [ARGS [ARGS ...]]]
@@ -39,4 +39,6 @@ is declared like this :
 
     displaylogservers=servers, ls -lht /var/log/
 
-You won't need to run the command with a -s serverlist, the displaylogservers will run automatically on the "servers" list
+You won't need to run the command with a -s serverlist, the displaylogservers will run automatically on the "servers" list :
+
+    $ qi -c displaylogservers
