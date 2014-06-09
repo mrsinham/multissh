@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="qi",
-    version="0.1.1",
+    version="0.1.2",
     author="Julien LEFEVRE",
     description="A tool to execute same request on multiple servers in parallel. Needs to be autorized by keys.",
     author_email="julien.lefevr@gmail.com",
