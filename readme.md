@@ -5,7 +5,7 @@ Qi is a simple tool based on Paramiko framework to execute a parallel query on m
 
 ## Basic usage
 
-Qi use its configuration file, `~/.qi`, see the configuration section
+Qi use its configuration file, `~/.qi`, see the configuration section. Copy qi.example to ~/.qi to start a new conf file
 
     usage: main.py [-h] [-e EXECUTE] [-s SERVERALIAS] [-c COMMAND]
                    [-a [ARGS [ARGS ...]]]
@@ -27,14 +27,14 @@ Qi use its configuration file, `~/.qi`, see the configuration section
 
     $ qi -s myserverlist -e 'ls /tmp/ | wc -l'
 
-This will execute the command on each server contained in the [server] section in the ~/.qi config file (see qi.example)
+This will execute the command on each server contained in the `[server]` section in the ~/.qi config file (see qi.example)
 
 
 ## Executing a precorded command on multiple servers
 
     $ qi -s myserverlist -c mycommand
 
-This will execute the command "mycommand" recorded in the [cmd] section on the server list myserverlist. If the command
+This will execute the command "mycommand" recorded in the `[cmd]` section on the server list myserverlist. If the command
 is declared like this :
 
     displaylogservers=servers, ls -lht /var/log/
